@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nihongo Master</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="header">
+    <div class="logo">
+        <span></span>
+        <div>
+            <h1>BANGNYOE31</h1>
+            <p>Belajar Bahasa Jepang
+            </p>
+        </div>
+    </div>
+
+    <button id="menuBtn" class="menu-btn">☰</button>
+</header>
+
+<nav id="navbar">
+    <button class="nav-btn active" data-page="home">🏠 Beranda</button>
+    <button class="nav-btn" data-page="vocabulary">📚 Kosakata</button>
+    <button class="nav-btn" data-page="hiragana">あ Hiragana</button>
+    <button class="nav-btn" data-page="katakana">カ Katakana</button>
+    <button class="nav-btn" data-page="kanji">漢字 Kanji N5</button>
+    <button class="nav-btn" data-page="quiz">📝 Quiz</button>
+</nav>
+
+<main>
+
+    <!-- BERANDA -->
+    <section id="home" class="page active-page">
+
+        <div class="hero">
+            <div>
+                <span class="badge"> BANGNYOE31🧑🏻‍🏫</span>
+
+                <h2>Belajar Bahasa Jepang<br>
+                    Jadi Lebih Menyenangkan Bersama BANGNYOE!😇</h2>
+
+                <p>
+                    Hafalkan kosakata, Hiragana, Katakana,
+                    Kanji N5, dan uji kemampuanmu melalui quiz.
+                </p>
+
+                <button class="primary-btn" data-go="vocabulary">
+                    Mulai Belajar 🚀
+                </button>
+            </div>
+
+            <div class="japan-card">
+                <div class="japan-circle">日本</div>
+                <h3>日本語</h3>
+                <p>Nihongo</p>
+            </div>
+        </div>
+
+        <div class="stats">
+
+            <div class="stat-card">
+                <span>📚</span>
+                <h3>25</h3>
+                <p>Bab Kosakata</p>
+            </div>
+
+            <div class="stat-card">
+                <span>あ</span>
+                <h3>104+</h3>
+                <p>Hiragana</p>
+            </div>
+
+            <div class="stat-card">
+                <span>カ</span>
+                <h3>104+</h3>
+                <p>Katakana</p>
+            </div>
+
+            <div class="stat-card">
+                <span>漢</span>
+                <h3>100+</h3>
+                <p>Kanji N5</p>
+            </div>
+
+        </div>
+
+        <div class="quick-menu">
+
+            <h2>Menu Belajar</h2>
+
+            <div class="quick-grid">
+
+                <div class="quick-card" data-go="vocabulary">
+                    <span>📖</span>
+                    <h3>Kosakata</h3>
+                    <p>Belajar kosakata per BAB</p>
+                </div>
+
+                <div class="quick-card" data-go="hiragana">
+                    <span>あ</span>
+                    <h3>Hiragana</h3>
+                    <p>Pelajari huruf Hiragana</p>
+                </div>
+
+                <div class="quick-card" data-go="katakana">
+                    <span>カ</span>
+                    <h3>Katakana</h3>
+                    <p>Pelajari huruf Katakana</p>
+                </div>
+
+                <div class="quick-card" data-go="kanji">
+                    <span>漢</span>
+                    <h3>Kanji N5</h3>
+                    <p>Kanji dasar bahasa Jepang</p>
+                </div>
+
+                <div class="quick-card" data-go="quiz">
+                    <span>🎯</span>
+                    <h3>Quiz</h3>
+                    <p>Uji kemampuanmu</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- KOSAKATA -->
+    <section id="vocabulary" class="page">
+
+        <div class="section-title">
+            <span>📚</span>
+            <div>
+                <h2>Kosakata Jepang</h2>
+                <p>Belajar kosakata berdasarkan BAB</p>
+            </div>
+        </div>
+
+        <div class="control-box">
+
+            <label>Pilih BAB</label>
+
+            <select id="chapterSelect">
+                <option value="1">BAB 1</option>
+                <option value="2">BAB 2</option>
+                <option value="3">BAB 3</option>
+                <option value="4">BAB 4</option>
+                <option value="5">BAB 5</option>
+                <option value="6">BAB 6</option>
+                <option value="7">BAB 7</option>
+                <option value="8">BAB 8</option>
+                <option value="9">BAB 9</option>
+                <option value="10">BAB 10</option>
+                <option value="11">BAB 11</option>
+                <option value="12">BAB 12</option>
+                <option value="13">BAB 13</option>
+                <option value="14">BAB 14</option>
+                <option value="15">BAB 15</option>
+                <option value="16">BAB 16</option>
+                <option value="17">BAB 17</option>
+                <option value="18">BAB 18</option>
+                <option value="19">BAB 19</option>
+                <option value="20">BAB 20</option>
+                <option value="21">BAB 21</option>
+                <option value="22">BAB 22</option>
+                <option value="23">BAB 23</option>
+                <option value="24">BAB 24</option>
+                <option value="25">BAB 25</option>
+            </select>
+
+            <input
+                type="text"
+                id="searchVocabulary"
+                placeholder="🔎 Cari kosakata..."
+            >
+
+        </div>
+
+        <div id="vocabularyList" class="vocabulary-grid"></div>
+
+    </section>
+
+
+    <!-- HIRAGANA -->
+    <section id="hiragana" class="page">
+
+        <div class="section-title">
+            <span>あ</span>
+            <div>
+                <h2>Hiragana</h2>
+                <p>Huruf dasar + tenten + maru</p>
+            </div>
+        </div>
+
+        <div class="kana-tabs">
+
+            <button class="kana-tab active" data-kana="hiraganaBasic">
+                Hiragana Dasar
+            </button>
+
+            <button class="kana-tab" data-kana="hiraganaDakuon">
+                Tenten & Maru
+            </button>
+
+            <button class="kana-tab" data-kana="hiraganaCombo">
+                Kombinasi
+            </button>
+
+        </div>
+
+        <div id="hiraganaGrid" class="kana-grid"></div>
+
+    </section>
+
+
+    <!-- KATAKANA -->
+    <section id="katakana" class="page">
+
+        <div class="section-title">
+            <span>カ</span>
+            <div>
+                <h2>Katakana</h2>
+                <p>Huruf dasar + tenten + maru</p>
+            </div>
+        </div>
+
+        <div class="kana-tabs">
+
+            <button class="katakana-tab active" data-kana="katakanaBasic">
+                Katakana Dasar
+            </button>
+
+            <button class="katakana-tab" data-kana="katakanaDakuon">
+                Tenten & Maru
+            </button>
+
+            <button class="katakana-tab" data-kana="katakanaCombo">
+                Kombinasi
+            </button>
+
+        </div>
+
+        <div id="katakanaGrid" class="kana-grid"></div>
+
+    </section>
+
+
+    <!-- KANJI -->
+    <section id="kanji" class="page">
+
+        <div class="section-title">
+            <span>漢</span>
+            <div>
+                <h2>Kanji N5</h2>
+                <p>Kanji dasar bahasa Jepang</p>
+            </div>
+        </div>
+
+        <input
+            type="text"
+            id="searchKanji"
+            class="search"
+            placeholder="🔎 Cari Kanji atau arti..."
+        >
+
+        <div id="kanjiGrid" class="kanji-grid"></div>
+
+    </section>
+
+
+    <!-- QUIZ -->
+    <section id="quiz" class="page">
+
+        <div class="quiz-header">
+
+            <span>🎯</span>
+
+            <div>
+                <h2>Quiz Bahasa Jepang</h2>
+                <p>Uji kemampuan kosakatamu</p>
+            </div>
+
+        </div>
+
+        <div id="quizStart" class="quiz-start">
+
+            <div class="quiz-icon">📝</div>
+
+            <h2>Siap untuk Quiz?</h2>
+
+            <p>
+                Jawab pertanyaan bahasa Jepang
+                dan lihat hasilmu di akhir quiz.
+            </p>
+
+            <button id="startQuiz" class="primary-btn">
+                Mulai Quiz 🚀
+            </button>
+
+        </div>
+
+        <div id="quizBox" class="quiz-box hidden">
+
+            <div class="quiz-progress">
+                <span id="questionNumber">Pertanyaan 1</span>
+                <span id="scoreLive">Benar: 0</span>
+            </div>
+
+            <div class="progress-bar">
+                <div id="progress"></div>
+            </div>
+
+            <div class="question-card">
+
+                <p id="questionType">Apa arti dari?</p>
+
+                <h1 id="questionWord">学生</h1>
+
+                <div id="answers" class="answers"></div>
+
+            </div>
+
+        </div>
+
+        <div id="quizResult" class="quiz-result hidden">
+
+            <div class="result-icon">🏆</div>
+
+            <h2>Quiz Selesai!</h2>
+
+            <div class="final-score">
+                <span id="finalScore">0</span>
+                <small>/ 10</small>
+            </div>
+
+            <p id="resultMessage"></p>
+
+            <div class="result-stat">
+
+                <div>
+                    <strong id="correctCount">0</strong>
+                    <span>Benar</span>
+                </div>
+
+                <div>
+                    <strong id="wrongCount">0</strong>
+                    <span>Salah</span>
+                </div>
+
+            </div>
+
+            <button id="restartQuiz" class="primary-btn">
+                🔄 Quiz Lagi
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+<footer>
+    <p>BANGNYOE31-BELAJAR BAHASA JEPANG</p>
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>
