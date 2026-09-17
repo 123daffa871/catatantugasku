@@ -1,986 +1,766 @@
-/* =====================================================
-   NIHONGO MASTER
-   JavaScript
-===================================================== */
+// ==========================================
+// TUGASKU - PENGINGAT TUGAS PELAJAR
+// ==========================================
+
+let tasks = JSON.parse(localStorage.getItem("tugasKu")) || [];
+
+const taskForm = document.getElementById("taskForm");
+const taskList = document.getElementById("taskList");
+const emptyState = document.getElementById("emptyState");
+
+const modal = document.getElementById("taskModal");
+const openModalBtn = document.getElementById("openModalBtn");
+const closeModalBtn = document.getElementById("closeModalBtn");
+
+const searchInput = document.getElementById("searchInput");
+const filterSubject = document.getElementById("filterSubject");
+const filterStatus = document.getElementById("filterStatus");
+
+const darkModeBtn = document.getElementById("darkModeBtn");
 
 
-/* =====================================================
-   NAVIGASI
-===================================================== */
+// ==========================================
+// MODAL
+// ==========================================
 
-const pages = document.querySelectorAll(".page");
-const navButtons = document.querySelectorAll(".nav-btn");
+openModalBtn.addEventListener("click", () => {
+    modal.classList.add("active");
 
-function showPage(pageName) {
+    // Tanggal default = hari ini
+    document.getElementById("deadline").value =
+        new Date().toISOString().split("T")[0];
 
-    pages.forEach(page => {
-        page.classList.remove("active-page");
-    });
+    document.getElementById("time").value = "23:59";
+});
 
-    navButtons.forEach(button => {
-        button.classList.remove("active");
-    });
+closeModalBtn.addEventListener("click", closeModal);
 
-    const target = document.getElementById(pageName);
-
-    if (target) {
-        target.classList.add("active-page");
+modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+        closeModal();
     }
+});
 
-    const activeButton = document.querySelector(
-        `.nav-btn[data-page="${pageName}"]`
+function closeModal() {
+    modal.classList.remove("active");
+}
+
+
+// ==========================================
+// TAMBAH TUGAS
+// ==========================================
+
+taskForm.addEventListener("submit", function (e) {
+
+    e.preventDefault();
+
+    const name = document.getElementById("taskName").value.trim();
+    const subject = document.getElementById("subject").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const deadline = document.getElementById("deadline").value;
+    const time = document.getElementById("time").value;
+    const priority = document.getElementById("priority").value;
+    const reminder = Number(document.getElementById("reminder").value);
+
+    const task = {
+        id: Date.now(),
+        name,
+        subject,
+        description,
+        deadline,
+        time,
+        priority,
+        reminder,
+        completed: false,
+        createdAt: new Date().toISOString()
+    };
+
+    tasks.push(task);
+
+    saveTasks();
+
+    taskForm.reset();
+    closeModal();
+
+    showToast("✅ Tugas berhasil ditambahkan!");
+
+    renderTasks();
+});
+
+
+// ==========================================
+// SIMPAN LOCAL STORAGE
+// ==========================================
+
+function saveTasks() {
+    localStorage.setItem("tugasKu", JSON.stringify(tasks));
+}
+
+
+// ==========================================
+// FORMAT TANGGAL
+// ==========================================
+
+function formatDate(dateString) {
+
+    const date = new Date(dateString + "T00:00:00");
+
+    return date.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+    });
+}
+
+
+// ==========================================
+// STATUS DEADLINE
+// ==========================================
+
+function getDeadlineStatus(task) {
+
+    const deadline = new Date(
+        `${task.deadline}T${task.time}`
     );
 
-    if (activeButton) {
-        activeButton.classList.add("active");
+    const now = new Date();
+
+    if (task.completed) {
+        return "completed";
     }
 
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-    });
+    if (deadline < now) {
+        return "late";
+    }
+
+    return "pending";
 }
 
 
-navButtons.forEach(button => {
+// ==========================================
+// COUNTDOWN
+// ==========================================
 
-    button.addEventListener("click", () => {
+function getCountdown(task) {
 
-        showPage(button.dataset.page);
-
-        document.getElementById("navbar")
-            .classList.remove("open");
-
-    });
-
-});
-
-
-document.querySelectorAll("[data-go]").forEach(button => {
-
-    button.addEventListener("click", () => {
-        showPage(button.dataset.go);
-    });
-
-});
-
-
-document.getElementById("menuBtn").addEventListener("click", () => {
-
-    document.getElementById("navbar")
-        .classList.toggle("open");
-
-});
-
-
-/* =====================================================
-   TEXT TO SPEECH
-===================================================== */
-
-function speak(text) {
-
-    if (!("speechSynthesis" in window)) {
-        alert("Browser kamu tidak mendukung fitur suara.");
-        return;
+    if (task.completed) {
+        return "✅ Sudah selesai";
     }
 
-    speechSynthesis.cancel();
+    const deadline = new Date(
+        `${task.deadline}T${task.time}`
+    );
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    const now = new Date();
 
-    utterance.lang = "ja-JP";
-    utterance.rate = 0.75;
-    utterance.pitch = 1;
+    let difference = deadline - now;
 
-    speechSynthesis.speak(utterance);
+    if (difference <= 0) {
+        return "⚠️ Deadline telah lewat";
+    }
+
+    const days = Math.floor(
+        difference / (1000 * 60 * 60 * 24)
+    );
+
+    difference %= 1000 * 60 * 60 * 24;
+
+    const hours = Math.floor(
+        difference / (1000 * 60 * 60)
+    );
+
+    difference %= 1000 * 60 * 60;
+
+    const minutes = Math.floor(
+        difference / (1000 * 60)
+    );
+
+    if (days > 0) {
+        return `⏳ ${days} hari ${hours} jam lagi`;
+    }
+
+    if (hours > 0) {
+        return `⏳ ${hours} jam ${minutes} menit lagi`;
+    }
+
+    return `🔥 ${minutes} menit lagi`;
 }
 
 
-/* =====================================================
-   DATA KOSAKATA
-   Data contoh.
-   Tambahkan data milikmu ke setiap BAB.
-===================================================== */
+// ==========================================
+// PRIORITAS
+// ==========================================
 
-const vocabulary = {
+function getPriorityText(priority) {
 
-    1: [
-        {
-            jp: "わたし",
-            reading: "watashi",
-            meaning: "saya"
-        },
-        {
-            jp: "あなた",
-            reading: "anata",
-            meaning: "kamu"
-        },
-        {
-            jp: "せんせい",
-            reading: "sensei",
-            meaning: "guru"
-        },
-        {
-            jp: "がくせい",
-            reading: "gakusei",
-            meaning: "siswa"
-        },
-        {
-            jp: "かいしゃいん",
-            reading: "kaishain",
-            meaning: "pegawai perusahaan"
-        }
-    ],
-
-    2: [
-        {
-            jp: "これ",
-            reading: "kore",
-            meaning: "ini"
-        },
-        {
-            jp: "それ",
-            reading: "sore",
-            meaning: "itu"
-        },
-        {
-            jp: "あれ",
-            reading: "are",
-            meaning: "itu di sana"
-        },
-        {
-            jp: "ほん",
-            reading: "hon",
-            meaning: "buku"
-        },
-        {
-            jp: "かばん",
-            reading: "kaban",
-            meaning: "tas"
-        }
-    ],
-
-    3: [
-        {
-            jp: "ここ",
-            reading: "koko",
-            meaning: "di sini"
-        },
-        {
-            jp: "そこ",
-            reading: "soko",
-            meaning: "di situ"
-        },
-        {
-            jp: "あそこ",
-            reading: "asoko",
-            meaning: "di sana"
-        }
-    ],
-
-    4: [
-        {
-            jp: "おきます",
-            reading: "okimasu",
-            meaning: "bangun"
-        },
-        {
-            jp: "ねます",
-            reading: "nemasu",
-            meaning: "tidur"
-        }
-    ],
-
-    5: [
-        {
-            jp: "いきます",
-            reading: "ikimasu",
-            meaning: "pergi"
-        },
-        {
-            jp: "きます",
-            reading: "kimasu",
-            meaning: "datang"
-        },
-        {
-            jp: "かえります",
-            reading: "kaerimasu",
-            meaning: "pulang"
-        }
-    ],
-
-    6: [
-        {
-            jp: "たべます",
-            reading: "tabemasu",
-            meaning: "makan"
-        },
-        {
-            jp: "のみます",
-            reading: "nomimasu",
-            meaning: "minum"
-        }
-    ]
-
-};
-
-
-/* Membuat BAB 7-25 tetap tersedia */
-
-for (let i = 7; i <= 25; i++) {
-
-    if (!vocabulary[i]) {
-        vocabulary[i] = [];
+    if (priority === "high") {
+        return "🔴 Penting";
     }
 
+    if (priority === "medium") {
+        return "🟡 Sedang";
+    }
+
+    return "🟢 Santai";
 }
 
 
-/* =====================================================
-   TAMPILKAN KOSAKATA
-===================================================== */
+// ==========================================
+// RENDER TUGAS
+// ==========================================
 
-const vocabularyList =
-    document.getElementById("vocabularyList");
+function renderTasks() {
 
-const chapterSelect =
-    document.getElementById("chapterSelect");
+    let filteredTasks = [...tasks];
 
-const searchVocabulary =
-    document.getElementById("searchVocabulary");
+    const search = searchInput.value.toLowerCase();
+    const subjectFilter = filterSubject.value;
+    const statusFilter = filterStatus.value;
 
 
-function renderVocabulary() {
-
-    const chapter = chapterSelect.value;
-
-    const search =
-        searchVocabulary.value.toLowerCase().trim();
-
-    let data = vocabulary[chapter] || [];
-
-    data = data.filter(item => {
+    // SEARCH
+    filteredTasks = filteredTasks.filter(task => {
 
         return (
-            item.jp.includes(search) ||
-            item.reading.toLowerCase().includes(search) ||
-            item.meaning.toLowerCase().includes(search)
+            task.name.toLowerCase().includes(search) ||
+            task.subject.toLowerCase().includes(search) ||
+            task.description.toLowerCase().includes(search)
         );
 
     });
 
-    vocabularyList.innerHTML = "";
 
-    if (data.length === 0) {
+    // SUBJECT FILTER
+    if (subjectFilter !== "all") {
 
-        vocabularyList.innerHTML = `
-            <div class="vocab-card">
-                <h3>Belum ada data</h3>
-                <p>
-                    BAB ${chapter} siap diisi dengan
-                    kosakata yang kamu pelajari.
-                </p>
-            </div>
-        `;
-
-        return;
-    }
-
-
-    data.forEach(item => {
-
-        const card = document.createElement("div");
-
-        card.className = "vocab-card";
-
-        card.innerHTML = `
-            <div class="vocab-jp">
-                ${item.jp}
-            </div>
-
-            <div class="vocab-reading">
-                ${item.reading}
-            </div>
-
-            <div class="vocab-meaning">
-                ${item.meaning}
-            </div>
-
-            <button class="sound-btn">
-                🔊 Dengarkan
-            </button>
-        `;
-
-        card.querySelector(".sound-btn")
-            .addEventListener("click", () => {
-                speak(item.jp);
-            });
-
-        vocabularyList.appendChild(card);
-
-    });
-
-}
-
-
-chapterSelect.addEventListener(
-    "change",
-    renderVocabulary
-);
-
-searchVocabulary.addEventListener(
-    "input",
-    renderVocabulary
-);
-
-
-/* =====================================================
-   HIRAGANA
-===================================================== */
-
-const hiraganaBasic = [
-    ["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],
-    ["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],
-    ["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],
-    ["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],
-    ["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],
-    ["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],
-    ["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],
-    ["や","ya"],["ゆ","yu"],["よ","yo"],
-    ["ら","ra"],["り","ri"],["る","ru"],["れ","re"],["ろ","ro"],
-    ["わ","wa"],["を","wo"],["ん","n"]
-];
-
-
-const hiraganaDakuon = [
-    ["が","ga"],["ぎ","gi"],["ぐ","gu"],["げ","ge"],["ご","go"],
-    ["ざ","za"],["じ","ji"],["ず","zu"],["ぜ","ze"],["ぞ","zo"],
-    ["だ","da"],["ぢ","ji"],["づ","zu"],["で","de"],["ど","do"],
-    ["ば","ba"],["び","bi"],["ぶ","bu"],["べ","be"],["ぼ","bo"],
-    ["ぱ","pa"],["ぴ","pi"],["ぷ","pu"],["ぺ","pe"],["ぽ","po"]
-];
-
-
-const hiraganaCombo = [
-    ["きゃ","kya"],["きゅ","kyu"],["きょ","kyo"],
-    ["しゃ","sha"],["しゅ","shu"],["しょ","sho"],
-    ["ちゃ","cha"],["ちゅ","chu"],["ちょ","cho"],
-    ["にゃ","nya"],["にゅ","nyu"],["にょ","nyo"],
-    ["ひゃ","hya"],["ひゅ","hyu"],["ひょ","hyo"],
-    ["みゃ","mya"],["みゅ","myu"],["みょ","myo"],
-    ["りゃ","rya"],["りゅ","ryu"],["りょ","ryo"],
-    ["ぎゃ","gya"],["ぎゅ","gyu"],["ぎょ","gyo"],
-    ["じゃ","ja"],["じゅ","ju"],["じょ","jo"],
-    ["びゃ","bya"],["びゅ","byu"],["びょ","byo"],
-    ["ぴゃ","pya"],["ぴゅ","pyu"],["ぴょ","pyo"]
-];
-
-
-/* =====================================================
-   KATAKANA
-===================================================== */
-
-const katakanaBasic = [
-    ["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],
-    ["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],
-    ["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],
-    ["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],
-    ["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],
-    ["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],
-    ["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],
-    ["ヤ","ya"],["ユ","yu"],["ヨ","yo"],
-    ["ラ","ra"],["リ","ri"],["ル","ru"],["レ","re"],["ロ","ro"],
-    ["ワ","wa"],["ヲ","wo"],["ン","n"]
-];
-
-
-const katakanaDakuon = [
-    ["ガ","ga"],["ギ","gi"],["グ","gu"],["ゲ","ge"],["ゴ","go"],
-    ["ザ","za"],["ジ","ji"],["ズ","zu"],["ゼ","ze"],["ゾ","zo"],
-    ["ダ","da"],["ヂ","ji"],["ヅ","zu"],["デ","de"],["ド","do"],
-    ["バ","ba"],["ビ","bi"],["ブ","bu"],["ベ","be"],["ボ","bo"],
-    ["パ","pa"],["ピ","pi"],["プ","pu"],["ペ","pe"],["ポ","po"]
-];
-
-
-const katakanaCombo = [
-    ["キャ","kya"],["キュ","kyu"],["キョ","kyo"],
-    ["シャ","sha"],["シュ","shu"],["ショ","sho"],
-    ["チャ","cha"],["チュ","chu"],["チョ","cho"],
-    ["ニャ","nya"],["ニュ","nyu"],["ニョ","nyo"],
-    ["ヒャ","hya"],["ヒュ","hyu"],["ヒョ","hyo"],
-    ["ミャ","mya"],["ミュ","myu"],["ミョ","myo"],
-    ["リャ","rya"],["リュ","ryu"],["リョ","ryo"],
-    ["ギャ","gya"],["ギュ","gyu"],["ギョ","gyo"],
-    ["ジャ","ja"],["ジュ","ju"],["ジョ","jo"],
-    ["ビャ","bya"],["ビュ","byu"],["ビョ","byo"],
-    ["ピャ","pya"],["ピュ","pyu"],["ピョ","pyo"],
-    ["ファ","fa"],["フィ","fi"],["フェ","fe"],["フォ","fo"],
-    ["ティ","ti"],["ディ","di"],["ウィ","wi"],["ウェ","we"]
-];
-
-
-/* =====================================================
-   RENDER KANA
-===================================================== */
-
-function renderKana(containerId, data) {
-
-    const container =
-        document.getElementById(containerId);
-
-    container.innerHTML = "";
-
-    data.forEach(item => {
-
-        const card = document.createElement("div");
-
-        card.className = "kana-card";
-
-        card.innerHTML = `
-            <div class="kana-character">
-                ${item[0]}
-            </div>
-
-            <div class="kana-romaji">
-                ${item[1]}
-            </div>
-        `;
-
-        card.addEventListener("click", () => {
-            speak(item[0]);
+        filteredTasks = filteredTasks.filter(task => {
+            return task.subject === subjectFilter;
         });
 
-        container.appendChild(card);
-
-    });
-
-}
-
-
-renderKana(
-    "hiraganaGrid",
-    hiraganaBasic
-);
-
-renderKana(
-    "katakanaGrid",
-    katakanaBasic
-);
-
-
-/* HIRAGANA TAB */
-
-document.querySelectorAll(".kana-tab")
-.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        document.querySelectorAll(".kana-tab")
-            .forEach(btn => btn.classList.remove("active"));
-
-        button.classList.add("active");
-
-        const type = button.dataset.kana;
-
-        if (type === "hiraganaBasic") {
-            renderKana("hiraganaGrid", hiraganaBasic);
-        }
-
-        if (type === "hiraganaDakuon") {
-            renderKana("hiraganaGrid", hiraganaDakuon);
-        }
-
-        if (type === "hiraganaCombo") {
-            renderKana("hiraganaGrid", hiraganaCombo);
-        }
-
-    });
-
-});
-
-
-/* KATAKANA TAB */
-
-document.querySelectorAll(".katakana-tab")
-.forEach(button => {
-
-    button.addEventListener("click", () => {
-
-        document.querySelectorAll(".katakana-tab")
-            .forEach(btn => btn.classList.remove("active"));
-
-        button.classList.add("active");
-
-        const type = button.dataset.kana;
-
-        if (type === "katakanaBasic") {
-            renderKana("katakanaGrid", katakanaBasic);
-        }
-
-        if (type === "katakanaDakuon") {
-            renderKana("katakanaGrid", katakanaDakuon);
-        }
-
-        if (type === "katakanaCombo") {
-            renderKana("katakanaGrid", katakanaCombo);
-        }
-
-    });
-
-});
-
-
-/* =====================================================
-   KANJI N5
-===================================================== */
-
-const kanjiData = [
-
-    ["一","いち / ひと","satu"],
-    ["二","に / ふた","dua"],
-    ["三","さん / み","tiga"],
-    ["四","よん / し","empat"],
-    ["五","ご / いつ","lima"],
-    ["六","ろく / むっ","enam"],
-    ["七","なな / しち","tujuh"],
-    ["八","はち / やっ","delapan"],
-    ["九","きゅう / ここの","sembilan"],
-    ["十","じゅう / とお","sepuluh"],
-
-    ["百","ひゃく","seratus"],
-    ["千","せん","seribu"],
-    ["万","まん","sepuluh ribu"],
-
-    ["日","にち / ひ","hari / matahari"],
-    ["月","げつ / つき","bulan"],
-    ["火","か / ひ","api"],
-    ["水","すい / みず","air"],
-    ["木","もく / き","pohon"],
-    ["金","きん / かね","emas / uang"],
-    ["土","ど / つち","tanah"],
-
-    ["山","さん / やま","gunung"],
-    ["川","せん / かわ","sungai"],
-    ["田","でん / た","sawah"],
-    ["天","てん","langit"],
-    ["気","き","energi / perasaan"],
-
-    ["人","じん / ひと","orang"],
-    ["男","だん / おとこ","laki-laki"],
-    ["女","じょ / おんな","perempuan"],
-    ["子","し / こ","anak"],
-
-    ["学","がく / まな","belajar"],
-    ["校","こう","sekolah"],
-    ["生","せい / い","hidup / lahir"],
-    ["先","せん / さき","sebelum"],
-
-    ["本","ほん / もと","buku / dasar"],
-    ["名","めい / な","nama"],
-    ["年","ねん / とし","tahun"],
-    ["時","じ / とき","waktu"],
-
-    ["上","じょう / うえ","atas"],
-    ["下","か / した","bawah"],
-    ["中","ちゅう / なか","tengah"],
-    ["外","がい / そと","luar"],
-
-    ["右","う / みぎ","kanan"],
-    ["左","さ / ひだり","kiri"],
-    ["前","ぜん / まえ","depan"],
-    ["後","ご / あと","belakang"],
-
-    ["大","だい / おお","besar"],
-    ["小","しょう / ちい","kecil"],
-    ["長","ちょう / なが","panjang"],
-    ["高","こう / たか","tinggi"],
-    ["新","しん / あたら","baru"],
-    ["古","こ / ふる","lama"],
-
-    ["白","はく / しろ","putih"],
-    ["黒","こく / くろ","hitam"],
-    ["赤","せき / あか","merah"],
-    ["青","せい / あお","biru"],
-
-    ["食","しょく / た","makan"],
-    ["飲","いん / の","minum"],
-    ["見","けん / み","melihat"],
-    ["聞","ぶん / き","mendengar"],
-
-    ["行","こう / い","pergi"],
-    ["来","らい / く","datang"],
-    ["帰","き / かえ","pulang"],
-
-    ["電","でん","listrik"],
-    ["車","しゃ / くるま","mobil"],
-    ["駅","えき","stasiun"],
-    ["道","どう / みち","jalan"],
-
-    ["雨","う / あめ","hujan"],
-    ["空","くう / そら","langit"],
-    ["天","てん","langit"],
-
-    ["間","かん / あいだ","antara"],
-    ["何","なに / なん","apa"]
-];
-
-
-function renderKanji() {
-
-    const search =
-        document.getElementById("searchKanji")
-            .value
-            .toLowerCase()
-            .trim();
-
-    const grid =
-        document.getElementById("kanjiGrid");
-
-    grid.innerHTML = "";
-
-    const filtered = kanjiData.filter(item => {
-
-        return (
-            item[0].includes(search) ||
-            item[1].toLowerCase().includes(search) ||
-            item[2].toLowerCase().includes(search)
-        );
-
-    });
-
-
-    filtered.forEach(item => {
-
-        const card =
-            document.createElement("div");
-
-        card.className = "kanji-card";
-
-        card.innerHTML = `
-            <div class="kanji">${item[0]}</div>
-
-            <div class="kanji-reading">
-                ${item[1]}
-            </div>
-
-            <div class="kanji-meaning">
-                ${item[2]}
-            </div>
-
-            <button class="sound-btn">
-                🔊 Dengarkan
-            </button>
-        `;
-
-        card.querySelector(".sound-btn")
-            .addEventListener("click", () => {
-
-                speak(item[0]);
-
-            });
-
-        grid.appendChild(card);
-
-    });
-
-}
-
-
-document.getElementById("searchKanji")
-    .addEventListener("input", renderKanji);
-
-renderKanji();
-
-
-/* =====================================================
-   QUIZ
-===================================================== */
-
-let quizQuestions = [];
-let currentQuestion = 0;
-let score = 0;
-let wrong = 0;
-
-
-/* Ambil kosakata yang tersedia */
-
-function getQuizData() {
-
-    let result = [];
-
-    Object.values(vocabulary).forEach(chapter => {
-
-        result.push(...chapter);
-
-    });
-
-    return result;
-
-}
-
-
-/* Acak */
-
-function shuffle(array) {
-
-    return [...array].sort(
-        () => Math.random() - 0.5
-    );
-
-}
-
-
-/* Mulai quiz */
-
-document.getElementById("startQuiz")
-    .addEventListener("click", startQuiz);
-
-
-document.getElementById("restartQuiz")
-    .addEventListener("click", startQuiz);
-
-
-function startQuiz() {
-
-    const data = getQuizData();
-
-    if (data.length < 4) {
-
-        alert(
-            "Tambahkan minimal 4 kosakata terlebih dahulu untuk menjalankan quiz."
-        );
-
-        return;
     }
 
 
-    quizQuestions = shuffle(data).slice(
-        0,
-        Math.min(10, data.length)
-    );
+    // STATUS FILTER
+    if (statusFilter !== "all") {
 
-    currentQuestion = 0;
-    score = 0;
-    wrong = 0;
+        filteredTasks = filteredTasks.filter(task => {
+            return getDeadlineStatus(task) === statusFilter;
+        });
 
-
-    document.getElementById("quizStart")
-        .classList.add("hidden");
-
-    document.getElementById("quizResult")
-        .classList.add("hidden");
-
-    document.getElementById("quizBox")
-        .classList.remove("hidden");
-
-    showQuestion();
-
-}
+    }
 
 
-/* Tampilkan soal */
+    // SORT DEADLINE
+    filteredTasks.sort((a, b) => {
 
-function showQuestion() {
+        const dateA = new Date(`${a.deadline}T${a.time}`);
+        const dateB = new Date(`${b.deadline}T${b.time}`);
 
-    const question =
-        quizQuestions[currentQuestion];
-
-    const allAnswers =
-        shuffle([
-            question.meaning,
-            ...getWrongAnswers(question.meaning)
-        ]).slice(0, 4);
-
-
-    document.getElementById("questionNumber")
-        .textContent =
-        `Pertanyaan ${currentQuestion + 1} / ${quizQuestions.length}`;
-
-
-    document.getElementById("scoreLive")
-        .textContent =
-        `Benar: ${score}`;
-
-
-    document.getElementById("progress")
-        .style.width =
-        `${(currentQuestion / quizQuestions.length) * 100}%`;
-
-
-    document.getElementById("questionWord")
-        .textContent =
-        question.jp;
-
-
-    const answers =
-        document.getElementById("answers");
-
-    answers.innerHTML = "";
-
-
-    allAnswers.forEach(answer => {
-
-        const button =
-            document.createElement("button");
-
-        button.className = "answer-btn";
-
-        button.textContent = answer;
-
-        button.addEventListener(
-            "click",
-            () => checkAnswer(
-                button,
-                answer,
-                question.meaning
-            )
-        );
-
-        answers.appendChild(button);
+        return dateA - dateB;
 
     });
 
-}
+
+    taskList.innerHTML = "";
 
 
-/* Jawaban salah */
+    if (filteredTasks.length === 0) {
 
-function getWrongAnswers(correct) {
-
-    const data = getQuizData();
-
-    return shuffle(
-        data
-            .filter(item => item.meaning !== correct)
-            .map(item => item.meaning)
-    );
-
-}
-
-
-/* Cek jawaban */
-
-function checkAnswer(
-    button,
-    selected,
-    correct
-) {
-
-    const buttons =
-        document.querySelectorAll(".answer-btn");
-
-    buttons.forEach(btn => {
-        btn.disabled = true;
-    });
-
-
-    if (selected === correct) {
-
-        button.classList.add("correct");
-
-        score++;
+        emptyState.style.display = "block";
 
     } else {
 
-        button.classList.add("wrong");
-
-        wrong++;
-
-        buttons.forEach(btn => {
-
-            if (btn.textContent === correct) {
-                btn.classList.add("correct");
-            }
-
-        });
+        emptyState.style.display = "none";
 
     }
 
+
+    filteredTasks.forEach(task => {
+
+        const status = getDeadlineStatus(task);
+
+        const card = document.createElement("div");
+
+        card.className =
+            `task-card ${task.priority} ${
+                task.completed ? "completed" : ""
+            }`;
+
+        card.innerHTML = `
+
+            <div class="task-top">
+
+                <div>
+                    <h3>${escapeHTML(task.name)}</h3>
+
+                    <div class="subject">
+                        📚 ${escapeHTML(task.subject)}
+                    </div>
+                </div>
+
+                <div>
+                    ${getPriorityText(task.priority)}
+                </div>
+
+            </div>
+
+
+            ${
+                task.description
+                    ? `<div class="description">
+                        ${escapeHTML(task.description)}
+                       </div>`
+                    : ""
+            }
+
+
+            <div class="task-info">
+
+                <span class="info">
+                    📅 ${formatDate(task.deadline)}
+                </span>
+
+                <span class="info">
+                    🕐 ${task.time}
+                </span>
+
+                <span class="info">
+                    ${getCountdown(task)}
+                </span>
+
+            </div>
+
+
+            <div class="task-actions">
+
+                ${
+                    task.completed
+                    ? `
+                        <button
+                            class="complete-btn"
+                            onclick="toggleComplete(${task.id})"
+                        >
+                            ↩️ Belum Selesai
+                        </button>
+                    `
+                    : `
+                        <button
+                            class="complete-btn"
+                            onclick="toggleComplete(${task.id})"
+                        >
+                            ✅ Selesai
+                        </button>
+                    `
+                }
+
+                <button
+                    class="delete-btn"
+                    onclick="deleteTask(${task.id})"
+                >
+                    🗑️ Hapus
+                </button>
+
+            </div>
+
+        `;
+
+        taskList.appendChild(card);
+
+    });
+
+    updateStatistics();
+    updateSubjects();
+    updateNearestTask();
+}
+
+
+// ==========================================
+// TANDAI SELESAI
+// ==========================================
+
+function toggleComplete(id) {
+
+    const task = tasks.find(task => task.id === id);
+
+    if (!task) return;
+
+    task.completed = !task.completed;
+
+    saveTasks();
+    renderTasks();
+
+    showToast(
+        task.completed
+        ? "🎉 Tugas selesai!"
+        : "↩️ Tugas dikembalikan"
+    );
+}
+
+
+// ==========================================
+// HAPUS TUGAS
+// ==========================================
+
+function deleteTask(id) {
+
+    const task = tasks.find(task => task.id === id);
+
+    if (!task) return;
+
+    const confirmDelete = confirm(
+        `Hapus tugas "${task.name}"?`
+    );
+
+    if (!confirmDelete) return;
+
+    tasks = tasks.filter(task => task.id !== id);
+
+    saveTasks();
+    renderTasks();
+
+    showToast("🗑️ Tugas dihapus");
+}
+
+
+// ==========================================
+// STATISTIK
+// ==========================================
+
+function updateStatistics() {
+
+    const total = tasks.length;
+
+    const completed = tasks.filter(
+        task => task.completed
+    ).length;
+
+    const today = new Date()
+        .toISOString()
+        .split("T")[0];
+
+    const todayTasks = tasks.filter(task => {
+        return (
+            task.deadline === today &&
+            !task.completed
+        );
+    }).length;
+
+    const late = tasks.filter(task => {
+        return getDeadlineStatus(task) === "late";
+    }).length;
+
+
+    document.getElementById("totalTugas").textContent = total;
+
+    document.getElementById("tugasHariIni").textContent =
+        todayTasks;
+
+    document.getElementById("tugasSelesai").textContent =
+        completed;
+
+    document.getElementById("tugasTerlambat").textContent =
+        late;
+}
+
+
+// ==========================================
+// DAFTAR MATA PELAJARAN
+// ==========================================
+
+function updateSubjects() {
+
+    const currentValue = filterSubject.value;
+
+    const subjects = [
+        ...new Set(
+            tasks.map(task => task.subject)
+        )
+    ].sort();
+
+    filterSubject.innerHTML =
+        `<option value="all">Semua Pelajaran</option>`;
+
+    subjects.forEach(subject => {
+
+        const option = document.createElement("option");
+
+        option.value = subject;
+        option.textContent = subject;
+
+        filterSubject.appendChild(option);
+
+    });
+
+    if (subjects.includes(currentValue)) {
+        filterSubject.value = currentValue;
+    }
+}
+
+
+// ==========================================
+// DEADLINE TERDEKAT
+// ==========================================
+
+function updateNearestTask() {
+
+    const nearestContent =
+        document.getElementById("nearestContent");
+
+    const unfinished = tasks
+        .filter(task => !task.completed)
+        .filter(task => {
+            return getDeadlineStatus(task) !== "late";
+        })
+        .sort((a, b) => {
+
+            const dateA =
+                new Date(`${a.deadline}T${a.time}`);
+
+            const dateB =
+                new Date(`${b.deadline}T${b.time}`);
+
+            return dateA - dateB;
+
+        });
+
+
+    if (unfinished.length === 0) {
+
+        nearestContent.innerHTML = `
+            <p>🎉 Tidak ada tugas yang harus dikerjakan.</p>
+        `;
+
+        return;
+    }
+
+
+    const task = unfinished[0];
+
+
+    nearestContent.innerHTML = `
+
+        <div class="nearest-card">
+
+            <h3>
+                ${escapeHTML(task.name)}
+            </h3>
+
+            <p>
+                📚 ${escapeHTML(task.subject)}
+            </p>
+
+            <p>
+                📅 ${formatDate(task.deadline)}
+                • 🕐 ${task.time}
+            </p>
+
+            <div class="countdown">
+                ${getCountdown(task)}
+            </div>
+
+        </div>
+
+    `;
+}
+
+
+// ==========================================
+// SEARCH & FILTER
+// ==========================================
+
+searchInput.addEventListener(
+    "input",
+    renderTasks
+);
+
+filterSubject.addEventListener(
+    "change",
+    renderTasks
+);
+
+filterStatus.addEventListener(
+    "change",
+    renderTasks
+);
+
+
+// ==========================================
+// TOAST
+// ==========================================
+
+function showToast(message) {
+
+    const toast =
+        document.getElementById("toast");
+
+    toast.textContent = message;
+
+    toast.classList.add("show");
 
     setTimeout(() => {
 
-        currentQuestion++;
+        toast.classList.remove("show");
 
-        if (
-            currentQuestion >=
-            quizQuestions.length
-        ) {
+    }, 2500);
+}
 
-            showResult();
 
-        } else {
+// ==========================================
+// DARK MODE
+// ==========================================
 
-            showQuestion();
+darkModeBtn.addEventListener("click", () => {
+
+    document.body.classList.toggle("dark");
+
+    const dark =
+        document.body.classList.contains("dark");
+
+    darkModeBtn.textContent =
+        dark ? "☀️" : "🌙";
+
+    localStorage.setItem(
+        "darkMode",
+        dark
+    );
+});
+
+
+if (
+    localStorage.getItem("darkMode") === "true"
+) {
+
+    document.body.classList.add("dark");
+
+    darkModeBtn.textContent = "☀️";
+}
+
+
+// ==========================================
+// KEAMANAN HTML
+// ==========================================
+
+function escapeHTML(text) {
+
+    const div = document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+}
+
+
+// ==========================================
+// UPDATE COUNTDOWN OTOMATIS
+// ==========================================
+
+setInterval(() => {
+
+    renderTasks();
+
+}, 30000);
+
+
+// ==========================================
+// NOTIFIKASI BROWSER
+// ==========================================
+
+function requestNotificationPermission() {
+
+    if (
+        "Notification" in window &&
+        Notification.permission === "default"
+    ) {
+
+        Notification.requestPermission();
+
+    }
+}
+
+
+function checkReminders() {
+
+    const now = new Date();
+
+    tasks.forEach(task => {
+
+        if (task.completed) return;
+
+        const deadline =
+            new Date(`${task.deadline}T${task.time}`);
+
+        const reminderTime =
+            new Date(
+                deadline.getTime() -
+                task.reminder * 60000
+            );
+
+        const difference =
+            Math.abs(now - reminderTime);
+
+        // Toleransi 1 menit
+        if (difference < 60000) {
+
+            const notificationKey =
+                `reminded_${task.id}_${task.reminder}`;
+
+            if (
+                localStorage.getItem(
+                    notificationKey
+                )
+            ) {
+                return;
+            }
+
+
+            if (
+                "Notification" in window &&
+                Notification.permission === "granted"
+            ) {
+
+                new Notification(
+                    "⏰ Pengingat Tugas",
+                    {
+                        body:
+                            `${task.name} - ${task.subject}`
+                    }
+                );
+
+            } else {
+
+                showToast(
+                    `⏰ Pengingat: ${task.name}`
+                );
+
+            }
+
+
+            localStorage.setItem(
+                notificationKey,
+                "true"
+            );
 
         }
 
-    }, 800);
+    });
 
 }
 
 
-/* Hasil */
-
-function showResult() {
-
-    document.getElementById("quizBox")
-        .classList.add("hidden");
-
-    document.getElementById("quizResult")
-        .classList.remove("hidden");
+// Cek setiap 30 detik
+setInterval(
+    checkReminders,
+    30000
+);
 
 
-    const total =
-        quizQuestions.length;
-
-    document.getElementById("finalScore")
-        .textContent = score;
-
-    document.getElementById("correctCount")
-        .textContent = score;
-
-    document.getElementById("wrongCount")
-        .textContent = wrong;
+// Minta izin notifikasi
+requestNotificationPermission();
 
 
-    const percentage =
-        Math.round((score / total) * 100);
+// ==========================================
+// JALANKAN APLIKASI
+// ==========================================
 
-
-    let message = "";
-
-    if (percentage >= 90) {
-
-        message =
-            "🎉 Luar biasa! Hafalanmu sangat bagus!";
-
-    } else if (percentage >= 70) {
-
-        message =
-            "👏 Bagus! Terus latihan agar semakin lancar.";
-
-    } else if (percentage >= 50) {
-
-        message =
-            "💪 Lumayan! Coba ulangi kosakata yang masih salah.";
-
-    } else {
-
-        message =
-            "📚 Jangan menyerah! Belajar sedikit demi sedikit.";
-
-    }
-
-
-    document.getElementById("resultMessage")
-        .textContent = message;
-
-}
-
-
-/* =====================================================
-   START
-===================================================== */
-
-renderVocabulary();
+renderTasks();
